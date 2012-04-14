@@ -1,0 +1,33 @@
+﻿using Nemerle;
+using Nemerle.Collections;
+using Nemerle.Text;
+using Nemerle.Utility;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Mvc;
+
+namespace NemerleRazorMvc
+{
+  /// <summary>
+  /// Description of NemerleMvcWebPageRazorHost.
+  /// </summary>
+  
+  public module PreApplicationStartCode
+  {
+    mutable startWasCalled : bool = false;
+
+    public Start() : void
+    {
+      unless (startWasCalled)
+      {
+          startWasCalled = true;
+          NemerleRazor.PreApplicationStartCode.Start();
+          ViewEngines.Engines.Add(NemerleRazorViewEngine());
+      }
+    }
+  }
+}
+
+[assembly: System.Web.PreApplicationStartMethod(typeof(NemerleRazorMvc.PreApplicationStartCode), "Start")]

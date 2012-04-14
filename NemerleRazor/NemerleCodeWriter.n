@@ -1,0 +1,112 @@
+﻿using Nemerle.Collections;
+using Nemerle.Text;
+using Nemerle.Utility;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Razor;
+using System.Web.Razor.Generator;
+
+namespace NemerleRazor
+{
+  /// <summary>
+  /// Description of NemerleCodeWriter.
+  /// </summary>
+  class NemerleCodeWriter: CodeWriter
+  {
+    public this() 
+    {
+    }
+    #region NemerleRazor.NemerleCodeWriter  Members
+    
+    Write(s : string) : void
+    {
+      InnerWriter.Write(s);
+    }
+    
+    WriteLine(s : string = "") : void
+    {
+      InnerWriter.WriteLine(s);
+    }
+    
+    protected override EmitStartConstructor(typeName : string) : void
+    {
+      Write($"$typeName(")
+    }
+    
+    protected override EmitEndConstructor() : void
+    { 
+      Write(")")
+    }
+    
+    protected override EmitStartLambdaDelegate(parameterNames : array[string]) : void
+    {
+      EmitStartLambdaExpression(parameterNames);
+    }
+    
+    protected override EmitEndLambdaDelegate() : void 
+    { 
+      EmitEndLambdaExpression()
+    }
+    
+    protected override EmitStartLambdaExpression(parameterNames : array[string]) : void
+    {
+      WriteLine($"(..$parameterNames) => { ")
+    }
+    
+    protected override EmitEndLambdaExpression() : void
+    { 
+      WriteLine("}")
+    }
+    
+    protected override EmitStartMethodInvoke(methodName : string) : void
+    {
+      Write($"$methodName(")
+    }
+    
+    protected override EmitEndMethodInvoke() : void
+    { 
+      Write(");")
+    }
+    
+    
+    public override WriteHelperHeaderPrefix(templateTypeName : string, isStatic : bool) : void
+    {
+    	_ = templateTypeName; _ = isStatic;
+    	throw System.NotImplementedException()
+    }
+    
+    public override WriteLinePragma(lineNumber : System.Nullable[int], fileName : string) : void
+    {
+      | (null, _) =>
+        ()
+      | _ =>
+        WriteLine();
+        Write($"#line $(lineNumber.Value)")
+    }
+    
+    public override WriteParameterSeparator() : void
+    { 
+      Write(", ")
+    }
+    
+    public override WriteReturn() : void
+    { 
+      WriteLine()
+    }
+    
+    public override WriteSnippet(snippet : string) : void
+    {
+      Write(snippet)
+    }
+    
+    public override WriteStringLiteral(literal : string) : void
+    {
+      def literal = literal.Replace(<#"#>, <#""#>);
+      Write($<#@"$literal"#>)
+    }
+    
+    #endregion
+  }
+}

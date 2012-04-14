@@ -1,0 +1,106 @@
+﻿using Nemerle.Collections;
+using Nemerle.Text;
+using Nemerle.Utility;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Razor.Generator;
+using System.Web.Razor.Parser;
+using System.Web.Razor.Parser.SyntaxTree;
+
+namespace NemerleRazor
+{
+  /// <summary>
+  /// Description of NemerleCodeParser.
+  /// </summary>
+  class NemerleCodeParser: CodeParser
+  {
+    protected override AcceptGenericArgument() : void {}
+    
+   
+    public override ParseBlock() : void
+    { 
+        def (isStatementBlock, complete) =
+            match (CurrentCharacter)
+            {
+              | '{' => 
+                _ = StartBlock(BlockType.Statement);
+                (true, ParseDelimitedBlock('}', CodeBlockInfo("code", CurrentLocation, true), true, true, null))
+              | '(' =>
+                _ = StartBlock(BlockType.Expression);
+                (false, ParseDelimitedBlock(')', CodeBlockInfo("explicit expression", CurrentLocation, true), true, true, null))
+              | _ =>
+                match (true)
+                {
+                  | _ when Char.IsWhiteSpace(CurrentCharacter) with message = "Unexpected whitespace after the '@'." 
+                  | _ when EndOfFile                           with message = "End-of-file was found after the '@'."
+                  | _                                          with message = $"'$CurrentCharacter' is not valid at the start of a code block." =>
+                    OnError(CurrentLocation, message)
+                }
+                
+                _ = StartBlock(BlockType.Expression);
+                End(ImplicitExpressionSpan.Create(context = Context,
+                                                  keywords = null,
+                                                  acceptTrailingDot = false,
+                                                  acceptedCharacters = AcceptedCharacters.NonWhiteSpace));
+                (false, true)
+            }
+            
+        when (isStatementBlock && !Context.WhiteSpaceIsImportantToAncestorBlock)
+        {
+          using (Context.StartTemporaryBuffer())
+          {
+            _ = Context.AcceptWhiteSpace(includeNewLines = false);
+            
+            when (Char.IsWhiteSpace(CurrentCharacter))
+            {
+                Context.AcceptLine(includeNewLineSequence = true);
+                Context.AcceptTemporaryBuffer()
+            }
+          }
+        }
+
+        // End a span if we have any content left and don't have an unterminated block left hanging
+        def haveGrowableSpan = Context.PreviousSpanCanGrow || complete;
+        when (!haveGrowableSpan || HaveContent)
+        {
+            def acceptedCharacters = if (complete) AcceptedCharacters.None else AcceptedCharacters.Any;
+            End(CodeSpan.Create(context = Context, hidden = false, acceptedCharacters = acceptedCharacters))
+        }
+        EndBlock()
+    }
+    
+    private ParseDelimitedBlock(terminator : char, block : CodeBlockInfo, allowTransition : bool, useErrorRecovery : bool, autoCompleteString : string) : bool
+    {
+      _ = Context.AcceptWhiteSpace(includeNewLines = true);
+
+      def bracket = Context.AcceptCurrent();
+      End(MetaCodeSpan.Create(Context));
+
+      def complete = BalanceBrackets(bracket = bracket,
+                                     appendOuter = false,
+                                     allowTransition = allowTransition,
+                                     useTemporaryBuffer = useErrorRecovery,
+                                     spanFactory = null);
+      if (complete)
+      {
+          End(CodeSpan.Create(Context));
+          _ = Context.AcceptCurrent();
+          End(MetaCodeSpan.Create(Context))
+      }
+      else
+      {
+        when (useErrorRecovery) 
+            End(CodeSpan.Create(context = Context, autoCompleteString = autoCompleteString));
+            OnError(block.Start, "The {0} block is missing a closing '{1}' character.", bracket, terminator)
+      }
+
+      complete
+    }
+    
+    protected override TryAcceptStringOrComment() : bool { false }
+    
+    protected override HandleTransition(_spanFactory : SpanFactory) : bool { false }
+  }
+}

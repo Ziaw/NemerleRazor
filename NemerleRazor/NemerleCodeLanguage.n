@@ -1,0 +1,45 @@
+﻿using Nemerle.Collections;
+using Nemerle.Text;
+using Nemerle.Utility;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Razor;
+using System.Web.Razor.Generator;
+using System.Web.Razor.Parser;
+
+namespace NemerleRazor
+{
+  /// <summary>
+  /// Description of NemerleCodeLanguage.
+  /// </summary>
+  public class NemerleCodeLanguage: RazorCodeLanguage
+  {
+    public override CodeDomProviderType : System.Type
+    {
+    	get { typeof(Nemerle.Compiler.NemerleCodeProvider) }
+    }
+    
+    public override CreateCodeGenerator(className : string, rootNamespaceName : string, sourceFileName : string, host : RazorEngineHost) : RazorCodeGenerator
+    {
+      NemerleRazorCodeGenerator(className, rootNamespaceName, sourceFileName, host)
+    }
+    
+    public override CreateCodeParser() : ParserBase
+    { 
+      NemerleCodeParser()
+    }
+    
+    public override LanguageName : string
+    {
+    	get { "Nemerle" }
+    }
+    
+    public static Install() : void
+    {
+      RazorCodeLanguage.Languages.Add("nhtml", NemerleCodeLanguage())
+    }
+    
+  }
+}

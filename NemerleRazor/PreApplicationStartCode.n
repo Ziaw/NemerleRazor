@@ -1,0 +1,32 @@
+﻿using Nemerle;
+using Nemerle.Collections;
+using Nemerle.Text;
+using Nemerle.Utility;
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+using System.Web.WebPages.Razor;
+using System.Web.Compilation;
+
+namespace NemerleRazor
+{
+  /// <summary>
+  /// Description of NemerleMvcWebPageRazorHost.
+  /// </summary>
+  public module PreApplicationStartCode
+  {
+    mutable startWasCalled : bool = false;
+
+    public Start() : void
+    {
+      unless (startWasCalled)
+      {
+          startWasCalled = true;
+          BuildProvider.RegisterBuildProvider(".nhtml", typeof(RazorBuildProvider));
+          NemerleCodeLanguage.Install();
+      }
+    }
+  }
+}
